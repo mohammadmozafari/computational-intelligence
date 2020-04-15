@@ -14,6 +14,13 @@ def read_data():
     y = y.values                                # numpy array for y: (180, )
     return x, y
 
+def sigmoid(x):
+    """
+    This function computes the sigmoid function for input of any shape.
+    """
+    s = 1 / (1 + np.exp(-x))
+    return s
+
 def q1_scatter_plot():
     """
     This function plots the data as a scatter plot using
@@ -27,4 +34,23 @@ def q1_scatter_plot():
     plt.legend()
     plt.show()
 
-q1_scatter_plot()
+def q2_compute_gradient(x, y0, W, b):
+    """
+    This function computes the cost function with
+    the given parameters.
+    Then it computes the gradient of the cost with
+    respect to W and b.
+    """
+    A = x @ W + b
+    assert A.shape == (180, ), "A has wrong shape"
+    y = sigmoid(A)
+    # TODO: fix cost function
+    cost = -np.sum(y0 * np.log(y) + (1 - y0) * np.log(1 - y))
+
+    dy = - (y0 * (y ** -1) + (1 - y0) * ((1 - y) ** -1))
+    dA = dy * (sigmoid(A) * (1 - sigmoid(A)))
+    assert dA.shape == (180, ), "dA has wrong shape"
+    dW = x.T @ dA
+    db = np.sum(dA)
+    return cost, dW, db
+
