@@ -41,16 +41,12 @@ def q2_compute_gradient(x, y0, W, b):
     Then it computes the gradient of the cost with
     respect to W and b.
     """
-    A = x @ W + b
-    assert A.shape == (180, ), "A has wrong shape"
-    y = sigmoid(A)
-    # TODO: fix cost function
-    cost = -np.sum(y0 * np.log(y) + (1 - y0) * np.log(1 - y))
-
-    dy = - (y0 * (y ** -1) + (1 - y0) * ((1 - y) ** -1))
-    dA = dy * (sigmoid(A) * (1 - sigmoid(A)))
-    assert dA.shape == (180, ), "dA has wrong shape"
-    dW = x.T @ dA
-    db = np.sum(dA)
+    A = x @ W + b                                                   # A.shape = (180, )
+    y = sigmoid(A)                                                  # y.shape = (180, )
+    cost = -np.sum(y0 * np.log(y) + (1 - y0) * np.log(1 - y))       # cost.shape = (180, )
+    dy = - (y0 * (y ** -1) + (1 - y0) * ((1 - y) ** -1))            # dcost/dy
+    dA = dy * (sigmoid(A) * (1 - sigmoid(A)))                       # dcost/dA
+    dW = x.T @ dA                                                   # dcost/dW
+    db = np.sum(dA)                                                 # dcost/db
     return cost, dW, db
 
