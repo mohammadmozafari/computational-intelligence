@@ -13,11 +13,14 @@ def read_data():
     y = csv_data['Label']
     y = y.values                                # numpy array for y: (180, )
 
+	# shuffle the data
     total = x.shape[0]
     mask = list(range(total))
     np.random.shuffle(mask)
     x = x[mask]
     y = y[mask]
+	
+	# 80 percent for train and 20 percent for test
     train_split = int(0.8 * total)
     x_train, y_train = x[:train_split], y[:train_split]
     x_test, y_test = x[train_split:], y[train_split:]
@@ -31,7 +34,7 @@ def sigmoid(x):
     return s
 
 
-def q1_scatter_plot(x_train, y_train, x_test, y_test):
+def scatter_plot(x_train, y_train, x_test, y_test, class1, class2):
     """
     This function plots the data as a scatter plot using
     matplotlib library.
@@ -42,42 +45,44 @@ def q1_scatter_plot(x_train, y_train, x_test, y_test):
     test_c1 = x_test[y_test == 1, :]
     fig, a = plt.subplots(1, 2)
     fig.set_size_inches(11, 5)
-    a[0].scatter(train_c0[:, 0], train_c0[:, 1], color='green', label='y = 0')
-    a[0].scatter(train_c1[:, 0], train_c1[:, 1], color='red', label='y = 1')
+    a[0].scatter(train_c0[:, 0], train_c0[:, 1], color='green', label=class1)
+    a[0].scatter(train_c1[:, 0], train_c1[:, 1], color='red', label=class2)
     a[0].legend()
     a[0].set_title('Train Set')
-    a[1].scatter(test_c0[:, 0], test_c0[:, 1], color='green', label='y = 0')
-    a[1].scatter(test_c1[:, 0], test_c1[:, 1], color='red', label='y = 1')
+    a[1].scatter(test_c0[:, 0], test_c0[:, 1], color='green', label=class1)
+    a[1].scatter(test_c1[:, 0], test_c1[:, 1], color='red', label=class2)
     a[1].legend()
     a[1].set_title('Test Set')
     plt.show()
 
-def q2_compute_cost_gradient(x, y0, W, b):
+def compute_cost_gradient1(x, y0, W, b):
     """
     This function computes the cost function with
     the given parameters.
     Then it computes the gradient of the cost with
     respect to W and b.
     """
-    A = x @ W + b                                                   # A.shape = (180, )
-    y = sigmoid(A)                                                  # y.shape = (180, )
+    # compute cost
+    A = x @ W + b
+    y = sigmoid(A)
     if y0 is None:
         return y
-    
-    cost = -1 * np.sum(y0 * np.log(y) + (1 - y0) * np.log(1 - y))   # cost.shape = (180, )
-    dy = -(y0 * (y ** -1) - (1 - y0) * ((1 - y) ** -1))             # dcost/dy
-    dA = dy * (y * (1 - y))                                         # dcost/dA
-    dW = x.T @ dA                                                   # dcost/dW
-    db = np.sum(dA)                                                 # dcost/db
+    cost = -1 * np.sum(y0 * np.log(y) + (1 - y0) * np.log(1 - y))
+    # compute gradients
+    dy = -(y0 * (y ** -1) - (1 - y0) * ((1 - y) ** -1))
+    dA = dy * (y * (1 - y))
+    dW = x.T @ dA
+    db = np.sum(dA)
     return cost, dW, db
 
-def q5_compute_cost_gradient(x, y0, W, V, U, b0, b1, b2):
+def compute_cost_gradient2(x, y0, W, V, U, b0, b1, b2):
     """
     This function computes the cost function with
     the given parameters for the second neural network.
     Then it computes the gradient of the cost with
     respect to parameters: W, V, U, b0, b1, b2
     """
+    # compute cost
     A1 = x @ W + b0
     A2 = x @ V + b1
     z0 = sigmoid(A1)
@@ -87,10 +92,10 @@ def q5_compute_cost_gradient(x, y0, W, V, U, b0, b1, b2):
     y = sigmoid(A3)
     if y0 is None:
         return y
-
     cost = np.sum((y - y0) ** 2)
-    dy = 2 * (y - y0)                                               # (180, )
-    dA3 = dy * (y * (1 - y))                                        # (180, )
+    # compute gradient
+    dy = 2 * (y - y0)
+    dA3 = dy * (y * (1 - y))
     dz0 = dA3 * U[0]
     dz1 = dA3 * U[1]
     dA1 = dz0 * (z0 * (1 - z0))
@@ -103,7 +108,7 @@ def q5_compute_cost_gradient(x, y0, W, V, U, b0, b1, b2):
     db2 = np.sum(dA3)
     return cost, dW, dV, dU, db0, db1, db2
 
-def q3_train_network(x_train, y_train):
+def train_1layer_network(x_train, y_train):
     """
     This function initializes W and b using normal distribution
     and then uses train data to train them.
@@ -111,16 +116,16 @@ def q3_train_network(x_train, y_train):
     """
     W = np.random.normal(0, 1, (2, ))
     b = np.random.normal(0, 1, (1, ))
-    n_epoch = 10000
-    lr = 0.01
+    n_epoch = 1000
+    lr = 0.2
     for i in range(n_epoch):
-        cost, dW, db = q2_compute_cost_gradient(x_train, y_train, W, b)
+        cost, dW, db = compute_cost_gradient1(x_train, y_train, W, b)
         W -= lr * dW
         b -= lr * db
         print('epoch {}: cost = {}'.format(i+1, cost))
     return W, b
 
-def q5_train_network(x_train, y_train):
+def train_2layer_network(x_train, y_train):
     """
     This function initializes W, V, U and b0, b1, b2 using normal distribution
     and then uses train data to train them.
@@ -132,10 +137,10 @@ def q5_train_network(x_train, y_train):
     b0 = np.random.normal(0, 1, (1, ))
     b1 = np.random.normal(0, 1, (1, ))
     b2 = np.random.normal(0, 1, (1, ))
-    n_epoch = 1000
+    n_epoch = 4000
     lr = 0.3
     for i in range(n_epoch):
-        cost, dW, dV, dU, db0, db1, db2 = q5_compute_cost_gradient(x_train, y_train, W, V, U, b0, b1, b2)
+        cost, dW, dV, dU, db0, db1, db2 = compute_cost_gradient2(x_train, y_train, W, V, U, b0, b1, b2)
         W -= (lr * dW)
         V -= (lr * dV)
         U -= (lr * dU)
@@ -146,7 +151,7 @@ def q5_train_network(x_train, y_train):
     return W, V, U, b0, b1, b2
 
 
-def q4_q5_predict(x_train, y_train, x_test, y_test, fn, params):
+def predict(x_train, y_train, x_test, y_test, fn, params):
     """
     This function takes the train weights for the linear model
     and predicts train and test labels. Then it plots the result.
@@ -160,11 +165,16 @@ def q4_q5_predict(x_train, y_train, x_test, y_test, fn, params):
     test_acc = np.sum(y_test_predicted == y_test) / x_test.shape[0]
     print('train accuracy =', train_acc)
     print('test accuracy =', test_acc)
-    q1_scatter_plot(x_train, y_train_predicted, x_test, y_test_predicted)
+    scatter_plot(x_train, y_train_predicted, x_test, y_test_predicted, 'predicted 0', 'predicted 1')
 
 if __name__ == '__main__':
     x_train, y_train, x_test, y_test = read_data()
-    # q1_scatter_plot(x_train, y_train, x_test, y_test)
-    params = q5_train_network(x_train, y_train)
-    # params = q5_train_network(x_train, y_train)
-    q4_q5_predict(x_train, y_train, x_test, y_test, q5_compute_cost_gradient, params)
+    scatter_plot(x_train, y_train, x_test, y_test, 'y=0', 'y=1')
+
+    # # 1-layer model
+    # params = train_1layer_network(x_train, y_train)
+    # predict(x_train, y_train, x_test, y_test, compute_cost_gradient1, params)
+
+    # 2-layer model
+    params = train_2layer_network(x_train, y_train)
+    predict(x_train, y_train, x_test, y_test, compute_cost_gradient2, params)
