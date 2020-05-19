@@ -4,8 +4,8 @@ def main():
 
     settings = extract_tsp_env('tsp_data.txt')
     init_size = 1000
-    mu = 100
-    lam = 100
+    mu = 10
+    lam = 10
     iters = 100000
     Evo(tsp_init_pop, init_size, len(settings), tsp_fit,
         settings, tsp_select_parents, mu, tsp_mutate, None,
@@ -58,6 +58,19 @@ def extract_tsp_env(file):
             env.append([float(split[1]), float(split[2])])
     return env
 
+def extract_knapsack_env(file):
+    """
+    Reads the given file and builds a 2d list
+    containing the weight and value of each item.
+    """
+    env = []
+    with open(file, 'r') as f:
+        lines = f.read().splitlines()
+        for line in lines:
+            split = line.split(' ')
+            env.append([float(split[0]), float(split[1])])
+    return env
+
 def tsp_init_pop(size, num_cities):
     """
     Creates random initial population for TSP problem.
@@ -68,6 +81,18 @@ def tsp_init_pop(size, num_cities):
         order = list(range(num_cities - 1))
         rnd.shuffle(order)
         initial_population.append(order)
+    return initial_population
+
+def ks_init_pop(size, num_items):
+    """
+    Creates random initial population for knapsack problem.
+    Each member is binary string that indicates
+    whether each item is included or not.
+    """
+    initial_population = []
+    for i in range(size):
+        choice = [rnd.randint(0, 1) for i in range(num_items)]
+        initial_population.append(choice)
     return initial_population
 
 def tsp_fit(route, env):
