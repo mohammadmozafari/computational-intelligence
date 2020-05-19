@@ -1,4 +1,5 @@
 import random as rnd
+import numpy as np
 
 def main():
 
@@ -69,7 +70,7 @@ def extract_knapsack_env(file):
         for line in lines:
             split = line.split(' ')
             env.append([float(split[0]), float(split[1])])
-    return env
+    return np.array(env)
 
 def tsp_init_pop(size, num_cities):
     """
@@ -93,7 +94,7 @@ def ks_init_pop(size, num_items):
     for i in range(size):
         choice = [rnd.randint(0, 1) for i in range(num_items)]
         initial_population.append(choice)
-    return initial_population
+    return np.array(initial_population)
 
 def tsp_fit(route, env):
     """
@@ -110,6 +111,20 @@ def tsp_fit(route, env):
     length += ((curr_x - final_x) ** 2 + (curr_y - final_y) ** 2) ** 0.5
     return 1 / length
 
+def ks_fit(choice, env):
+    """
+    Computes the the total value of items.
+    Computes the difference between bag space and total weight.
+    Uses these two to compute fitness
+    """
+    values = env[1:, 0]
+    weights = env[1:, 1]
+    space = env[0, 1]
+    total_value = choice @ env
+    total_weight = choice @ env
+    fitness = total_value - abs(space - total_weight)
+    return fitness
+
 def tsp_select_parents(routes, env, mu, fit_fn):
     """
     Selects parents according to their fitness.
@@ -122,6 +137,16 @@ def tsp_select_parents(routes, env, mu, fit_fn):
     parents = rnd.choices(routes, fitness, k=mu)
     return parents
 
+def ks_select_parents(choices, env, mu, fit_fn):
+    """
+    Selects parents according to their fitness.
+    """
+    fitness = []
+    for choice in choices:
+        fitness.append(fit_fn(choice, env))
+    sorted_pop = [x for _, x in sorted(zip(fitness, choices))]
+    return sorted_pop[-mu:]
+
 def tsp_mutate(route):
     """
     Mutates a route by swapping two random genes
@@ -132,6 +157,26 @@ def tsp_mutate(route):
     p2 = rnd.randint(0, p1)
     new_route[p1], new_route[p2] = new_route[p2], new_route[p1]
     return new_route
+
+def ks_crossover(mum, dad):
+    """
+    Creates children 2 children from prents  
+    """
+    length = len(mum)
+    rand = rnd.randint(1, length)
+    child1 = mum[:rand] + dad[rand:]
+    child2 = dad[:rand] + mum[rand:]
+    return child1, child2
+
+def ks_mutate(choice):
+    """
+    Mutates a choice by randomly change 1 gene from 0 to 1 or vice versa.
+    """
+    length = len(choice)
+    rand = rnd.randint(0, length - 1)
+    new_choice = choice.copy()
+    new_choice[rand] = 1 - new_choice[rand]
+    return new_choice
 
 def tsp_create_children(parents, mutate_fn, crossover):
     """
