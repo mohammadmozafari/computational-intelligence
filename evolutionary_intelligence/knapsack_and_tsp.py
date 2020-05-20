@@ -46,7 +46,7 @@ def solve_tsp():
     pop_size = 1
     mu = 1
     lam = 1
-    iterations = 1000000
+    iterations = 100000
 
     env = tsp_extract_env('tsp_data.txt')
     population = tsp_init_pop(pop_size, env.shape[0])
@@ -55,8 +55,11 @@ def solve_tsp():
         children = tsp_create_children(parents, tsp_mutate)
         population = tsp_select_children(parents, children, tsp_fit, env, lam)
         if (i + 1) % 1000 == 0:
-            check_population(population, i, tsp_fit, env, 0)
-
+            idx = check_population(population, i, tsp_fit, env, 0)
+    
+    print('\nBest Answer:')
+    print(population[idx])
+    
 def check_population(population, i, fitness_fn, env, mode):
     lens = []
     for member in population:
@@ -65,10 +68,11 @@ def check_population(population, i, fitness_fn, env, mode):
     best = population[lens.index(highest_fitness)]
     
     if mode == 0:
-        print('generation ', i + 1)
-        # print('   best answer:', best)
-        print('   fitness:', highest_fitness)
-        print('   length:', 1 / highest_fitness)
+        print()
+        print('Generation:', i+1)
+        print('   Fitness: %.2e' % highest_fitness)
+        print('   Path Length: %.2f' % (1 / highest_fitness))
+        return lens.index(highest_fitness)
     else:
         values = env[1:, 0]
         weights = env[1:, 1]
@@ -215,14 +219,14 @@ def tsp_fit(route, env):
     next_cities = route[order]
     a = env[route]
     b = env[next_cities]
-
     lens = np.sum((a - b) ** 2, axis=1)
     length = np.sum(lens ** 0.5)
     return 1 / length
 
 def tsp_mutate(route):
     """
-    Mutates a route by swapping two random genes
+    Randomly selects a substring of the route
+    and inverts it.
     """
     new_route = route.copy()
     n = route.shape[0]
@@ -231,13 +235,12 @@ def tsp_mutate(route):
     segment = route[p1:p2+1].copy()
     segment = segment[::-1]
     new_route[p1:p2+1] = segment
-
-    # print(new_route.shape)
     return new_route
 
 def tsp_create_children(parents, mutate_fn):
     """
     Each parent creates one child.
+    The child is created through mutation.
     """
     children = []
     for parent in parents:
@@ -246,6 +249,10 @@ def tsp_create_children(parents, mutate_fn):
     return children
 
 def tsp_select_children(parents, children, fit_fn, env, lam):
+    """
+    Best routes between parents and children are selected
+    for the next generation.
+    """
     whole = np.concatenate((parents, children))
     fitness = []
     for route in whole:
