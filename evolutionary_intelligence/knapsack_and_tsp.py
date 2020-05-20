@@ -1,20 +1,29 @@
+"""
+Notes:
+
+- Main function is the start of the program
+
+- There are 2 functions that can be called one 
+        for solving tsp and the other for knapsack
+
+- Functions that have prefix 'ks' are related 
+        to knapsack and the ones with prefix 'tsp'
+        are related to tsp problem
+"""
+
+
 import random as rnd
 import numpy as np
 
 def main():
-
-    # settings = extract_tsp_env('tsp_data.txt')
-    # init_size = 1000
-    # mu = 10
-    # lam = 10
-    # iters = 100000
-    # Evo(tsp_init_pop, init_size, len(settings), tsp_fit,
-    #     settings, tsp_select_parents, mu, tsp_mutate, None, None,
-    #     tsp_create_children, lam, tsp_select_children, iters, 0)
-
-    solve_knapsack()
+    solve_tsp()
+    # solve_knapsack()
 
 def solve_knapsack():
+    """
+    Defines parameters for knapsack problem and
+    solves knapsack using an evolutionary algorithm.
+    """
     pop_size = 300
     mu = 100
     lam = 1000
@@ -29,6 +38,25 @@ def solve_knapsack():
         population = children
         check_population(population, i, ks_fit, env, 1)
 
+def solve_tsp():
+    """
+    Defines parameters for tsp problem and
+    solves tsp using an evolutionary algorithm.
+    """
+    pop_size = 1
+    mu = 1
+    lam = 1
+    iterations = 1000000
+
+    env = tsp_extract_env('tsp_data.txt')
+    population = tsp_init_pop(pop_size, len(env))
+    for i in range(iterations):
+        parents = population
+        children = tsp_create_children(parents, tsp_mutate)
+        population = tsp_select_children(parents, children, tsp_fit, env, lam)
+        if (i + 1) % 1000 == 0:
+            check_population(population, i, tsp_fit, env, 0)
+
 def check_population(population, i, fitness_fn, env, mode):
     lens = []
     for member in population:
@@ -38,7 +66,7 @@ def check_population(population, i, fitness_fn, env, mode):
     
     if mode == 0:
         print('generation ', i + 1)
-        print('   best answer:', best)
+        # print('   best answer:', best)
         print('   fitness:', highest_fitness)
         print('   length:', 1 / highest_fitness)
     else:
@@ -152,7 +180,7 @@ def ks_create_children(parents, pop_size, crossover_fn, mutate_fn, mutation_rate
 # =====================================
 # =====================================
 
-def extract_tsp_env(file):
+def tsp_extract_env(file):
     """
     Reads the given file and builds a 2d list
     containing the position of all the cities.
@@ -192,18 +220,6 @@ def tsp_fit(route, env):
     length += ((curr_x - final_x) ** 2 + (curr_y - final_y) ** 2) ** 0.5
     return 1 / length
 
-def tsp_select_parents(routes, env, mu, fit_fn):
-    """
-    Selects parents according to their fitness.
-    """
-    fitness = []
-    for route in routes:
-        fitness.append(fit_fn(route, env))
-    total = sum(fitness)
-    weights = [x / total for x in fitness]
-    parents = rnd.choices(routes, fitness, k=mu)
-    return parents
-
 def tsp_mutate(route):
     """
     Mutates a route by swapping two random genes
@@ -215,7 +231,7 @@ def tsp_mutate(route):
     new_route[p1], new_route[p2] = new_route[p2], new_route[p1]
     return new_route
 
-def tsp_create_children(parents, mutate_fn, crossover_fn, mutation_rate):
+def tsp_create_children(parents, mutate_fn):
     """
     Each parent creates one child.
     """
@@ -230,8 +246,6 @@ def tsp_select_children(parents, children, fit_fn, env, lam):
     for route in whole:
         fitness.append(fit_fn(route, env))
     sorted_pop = [x for _, x in sorted(zip(fitness, whole))]
-    print(len(sorted_pop))
-    print(len(sorted_pop[-1]))
     return sorted_pop[-lam:]
 
 if __name__ == "__main__":
