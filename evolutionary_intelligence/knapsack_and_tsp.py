@@ -10,14 +10,12 @@ Notes:
         to knapsack and the ones with prefix 'tsp'
         are related to tsp problem
 """
-
-
 import random as rnd
 import numpy as np
 
 def main():
-    solve_tsp()
-    # solve_knapsack()
+    # solve_tsp()
+    solve_knapsack()
 
 def solve_knapsack():
     """
@@ -36,7 +34,11 @@ def solve_knapsack():
         parents = ks_select_parents(population, env, mu, ks_fit)
         children = ks_create_children(parents, pop_size, ks_crossover, ks_mutate, mutation_rate)
         population = children
-        check_population(population, i, ks_fit, env, 1)
+        if (i + 1) % 100 == 0:
+            idx = report(population, i, ks_fit, env, 1)
+
+    print('\nBest Answer:')
+    print(population[idx])
 
 def solve_tsp():
     """
@@ -55,33 +57,38 @@ def solve_tsp():
         children = tsp_create_children(parents, tsp_mutate)
         population = tsp_select_children(parents, children, tsp_fit, env, lam)
         if (i + 1) % 1000 == 0:
-            idx = check_population(population, i, tsp_fit, env, 0)
+            idx = report(population, i, tsp_fit, env, 0)
     
     print('\nBest Answer:')
     print(population[idx])
     
-def check_population(population, i, fitness_fn, env, mode):
+def report(population, i, fitness_fn, env, mode):
+    """
+    Reports the results of the current generation
+    """
     lens = []
     for member in population:
         lens.append(fitness_fn(member, env))
     highest_fitness = max(lens)
-    best = population[lens.index(highest_fitness)]
+    idx = lens.index(highest_fitness)
+    best = population[idx]
     
     if mode == 0:
         print()
         print('Generation:', i+1)
         print('   Fitness: %.2e' % highest_fitness)
         print('   Path Length: %.2f' % (1 / highest_fitness))
-        return lens.index(highest_fitness)
+        return idx
     else:
         values = env[1:, 0]
         weights = env[1:, 1]
-        print('generation ', i + 1)
-        print('   best answer:', best)
-        print('   fitness:', highest_fitness)
-        print('   total value:', best @ values)
-        print('   total wight:', best @ weights)
-        print('   capacity:', env[0, 1])
+        print()
+        print('Generation ', i+1)
+        print('   Fitness:', highest_fitness)
+        print('   Total Value:', best @ values)
+        print('   Total Weight:', best @ weights)
+        print('   Capacity:', env[0, 1])
+        return idx
 
 # functions related to knapsack problem
 # =====================================
@@ -131,7 +138,7 @@ def ks_fit(choice, env):
 
 def ks_select_parents(choices, env, mu, fit_fn):
     """
-    Selects parents according to their fitness.
+    Selects parents proportional to their fitness.
     """
     fitness = []
     for choice in choices:
@@ -155,7 +162,8 @@ def ks_crossover(mum, dad):
 
 def ks_mutate(choice):
     """
-    Mutates a choice by randomly change 1 gene from 0 to 1 or vice versa.
+    Mutates a choice by randomly
+    changing 1 gene from 0 to 1 or vice versa.
     """
     length = len(choice)
     rand = rnd.randint(0, length - 1)
@@ -165,7 +173,8 @@ def ks_mutate(choice):
 
 def ks_create_children(parents, pop_size, crossover_fn, mutate_fn, mutation_rate):
     """
-    Each 2 parents create 2 children.
+    Each 2 parents create 2 children using
+    crossover and mutation with given probability.
     """
     children = []
     n = len(parents)
@@ -181,7 +190,7 @@ def ks_create_children(parents, pop_size, crossover_fn, mutate_fn, mutation_rate
         children.append(child2)
     return np.array(children)
 
-# =====================================
+# functions related to tsp problem
 # =====================================
 
 def tsp_extract_env(file):
@@ -261,6 +270,9 @@ def tsp_select_children(parents, children, fit_fn, env, lam):
     order = np.argsort(fitness)
     sorted_pop = whole[order]
     return sorted_pop[-lam:]
+
+# program starting point
+# =====================================
 
 if __name__ == "__main__":
     main()
