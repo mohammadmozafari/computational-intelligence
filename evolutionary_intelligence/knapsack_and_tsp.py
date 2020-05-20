@@ -49,7 +49,7 @@ def solve_tsp():
     iterations = 1000000
 
     env = tsp_extract_env('tsp_data.txt')
-    population = tsp_init_pop(pop_size, len(env))
+    population = tsp_init_pop(pop_size, env.shape[0])
     for i in range(iterations):
         parents = population
         children = tsp_create_children(parents, tsp_mutate)
@@ -191,7 +191,7 @@ def tsp_extract_env(file):
         for line in lines:
             split = line.split(' ')
             env.append([float(split[1]), float(split[2])])
-    return env
+    return np.array(env)
 
 def tsp_init_pop(size, num_cities):
     """
@@ -200,24 +200,24 @@ def tsp_init_pop(size, num_cities):
     """
     initial_population = []
     for i in range(size):
-        order = list(range(num_cities - 1))
+        order = list(range(num_cities))
         rnd.shuffle(order)
         initial_population.append(order)
-    return initial_population
+    return np.array(initial_population)
 
 def tsp_fit(route, env):
     """
     Computes the length of given route.
     The fitness equals inverse of length.
     """
-    length = 0.0
-    curr_x, curr_y = env[-1]
-    final_x, final_y = curr_x, curr_y
-    for city in route:
-        next_x, next_y = env[city]
-        length += ((curr_x - next_x) ** 2 + (curr_y - next_y) ** 2) ** 0.5
-        curr_x, curr_y = next_x, next_y
-    length += ((curr_x - final_x) ** 2 + (curr_y - final_y) ** 2) ** 0.5
+    order = np.zeros((route.shape[0]), dtype=int)
+    order[0:-1] = np.arange(route.shape[0] - 1) + 1
+    next_cities = route[order]
+    a = env[route]
+    b = env[next_cities]
+
+    lens = np.sum((a - b) ** 2, axis=1)
+    length = np.sum(lens ** 0.5)
     return 1 / length
 
 def tsp_mutate(route):
@@ -225,10 +225,14 @@ def tsp_mutate(route):
     Mutates a route by swapping two random genes
     """
     new_route = route.copy()
-    n = len(route)
-    p1 = rnd.randint(1, n - 1)
-    p2 = rnd.randint(0, p1)
-    new_route[p1], new_route[p2] = new_route[p2], new_route[p1]
+    n = route.shape[0]
+    p1 = rnd.randint(0, n - 2)
+    p2 = rnd.randint(p1 + 1, n - 1)
+    segment = route[p1:p2+1].copy()
+    segment = segment[::-1]
+    new_route[p1:p2+1] = segment
+
+    # print(new_route.shape)
     return new_route
 
 def tsp_create_children(parents, mutate_fn):
@@ -237,15 +241,18 @@ def tsp_create_children(parents, mutate_fn):
     """
     children = []
     for parent in parents:
-        children.append(mutate_fn(parent))
+        child1 = mutate_fn(parent)
+        children.append(child1)
     return children
 
 def tsp_select_children(parents, children, fit_fn, env, lam):
-    whole = parents + children
+    whole = np.concatenate((parents, children))
     fitness = []
     for route in whole:
         fitness.append(fit_fn(route, env))
-    sorted_pop = [x for _, x in sorted(zip(fitness, whole))]
+    fitness = np.array(fitness)
+    order = np.argsort(fitness)
+    sorted_pop = whole[order]
     return sorted_pop[-lam:]
 
 if __name__ == "__main__":
