@@ -16,6 +16,12 @@ import random as rnd
 import numpy as np
 
 def main():
+    # mum = np.array([8, 4, 7, 3, 6, 2, 5, 1, 9, 0])
+    # dad = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+    # c1, c2 = tsp_crossover(mum, dad)
+    # print(c1)
+    # print(c2)
+
     solve_tsp()
     # solve_knapsack()
 
@@ -46,13 +52,14 @@ def solve_tsp():
     pop_size = 1
     mu = 1
     lam = 1
-    iterations = 1000000
+    mutation_rate = 0.1
+    iterations = 170000
 
     env = tsp_extract_env('tsp_data.txt')
     population = tsp_init_pop(pop_size, len(env))
     for i in range(iterations):
         parents = population
-        children = tsp_create_children(parents, tsp_mutate)
+        children = tsp_create_children(parents, pop_size, tsp_crossover, tsp_mutate, mutation_rate)
         population = tsp_select_children(parents, children, tsp_fit, env, lam)
         if (i + 1) % 1000 == 0:
             check_population(population, i, tsp_fit, env, 0)
@@ -191,7 +198,7 @@ def tsp_extract_env(file):
         for line in lines:
             split = line.split(' ')
             env.append([float(split[1]), float(split[2])])
-    return env
+    return np.array(env)
 
 def tsp_init_pop(size, num_cities):
     """
@@ -203,7 +210,7 @@ def tsp_init_pop(size, num_cities):
         order = list(range(num_cities - 1))
         rnd.shuffle(order)
         initial_population.append(order)
-    return initial_population
+    return np.array(initial_population)
 
 def tsp_fit(route, env):
     """
@@ -220,6 +227,40 @@ def tsp_fit(route, env):
     length += ((curr_x - final_x) ** 2 + (curr_y - final_y) ** 2) ** 0.5
     return 1 / length
 
+def tsp_select_parents(routes, env, mu, fit_fn):
+    """
+    Selects parents according to their fitness.
+    """
+    fitness = []
+    for route in routes:
+        fitness.append(fit_fn(route, env))
+    total = sum(fitness)
+    weights = [x / (total + 1e-10) for x in fitness]
+    parents = rnd.choices(routes, weights, k=mu)
+    return np.array(parents)
+
+def tsp_crossover(mum, dad):
+    def create_child(p1, p2, a, b):
+        child = p2.copy()
+        child[a:b+1] = p1[a:b+1].copy()
+
+        for i in range(a, b+1):
+            if p2[i] in child[a:b+1]:
+                continue
+            other = p1[i]
+            while (other in p2[a:b+1]):
+                temp = (np.where(p2 == other))[0]
+                other = p1[temp]
+            x = (np.where(p2 == other))[0]
+            child[x] = p2[i]
+        return child
+     
+    a = rnd.randint(1, len(mum) - 2)
+    b = rnd.randint(a, len(mum) - 2)
+    child1 = create_child(mum, dad, a, b)
+    child2 = create_child(dad, mum, a, b)
+    return child1, child2
+
 def tsp_mutate(route):
     """
     Mutates a route by swapping two random genes
@@ -231,22 +272,38 @@ def tsp_mutate(route):
     new_route[p1], new_route[p2] = new_route[p2], new_route[p1]
     return new_route
 
-def tsp_create_children(parents, mutate_fn):
+def tsp_create_children(parents, pop_size, crossover_fn, mutate_fn, mutation_rate):
     """
-    Each parent creates one child.
+    Each 2 parents create 2 children.
     """
+    # children = []
+    # n = parents.shape[0]
+    # for i in range(pop_size // 2):
+    #     mum = parents[rnd.randint(0, n - 1)]
+    #     dad = parents[rnd.randint(0, n - 1)]
+    #     child1, child2 = crossover_fn(mum, dad)
+    #     if rnd.uniform(0, 1) < mutation_rate:
+    #         child1 = mutate_fn(child1)
+    #     if rnd.uniform(0, 1) < mutation_rate:
+    #         child2 = mutate_fn(child2)
+    #     children.append(child1)
+    #     children.append(child2)
     children = []
     for parent in parents:
-        children.append(mutate_fn(parent))
-    return children
+        child = mutate_fn(parent)
+        child = mutate_fn(child)
+        children.append(child)
+    return np.array(children)
 
 def tsp_select_children(parents, children, fit_fn, env, lam):
-    whole = parents + children
+    whole = np.concatenate((parents, children))
     fitness = []
     for route in whole:
         fitness.append(fit_fn(route, env))
-    sorted_pop = [x for _, x in sorted(zip(fitness, whole))]
-    return sorted_pop[-lam:]
+    fitness = np.array(fitness)
+    order = np.argsort(fitness)
+    sorted_pop = whole[order]
+    return sorted_pop[-lam:, :]
 
 if __name__ == "__main__":
     main()
