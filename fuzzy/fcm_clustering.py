@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 
 def main():
     data = get_data('sample1.csv')
@@ -9,10 +10,25 @@ def main():
     plot_clusters(data, centroids)
 
 def get_data(file):
-    pass
+    """
+    Extracts a 2d numpy array out of
+    the given csv file. each row consists of
+    2 numbers, the coordiates of the datum.
+    """
+    data = pd.read_csv(file)
+    data = data.values
+    print('Shape of data:', data.shape)
+    return data
 
 def plot_data(data):
-    pass
+    """
+    Plots the data extracted from csv file
+    in a 2d plane.
+    """
+    plt.scatter(data[:,0], data[:, 1], s=12, c='g')
+    plt.xlabel('X 1')
+    plt.ylabel('X 2')
+    plt.show()
 
 def find_optimum_c(data):
     pass
