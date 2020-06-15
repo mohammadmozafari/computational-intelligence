@@ -4,9 +4,11 @@ import matplotlib.pyplot as plt
 
 def main():
     data = get_data('sample1.csv')
-    plot_data(data)
-    C = find_optimum_c(data)
-    centroids, cost, pbmf = cluster_data(data, C)
+    # plot_data(data)
+    # C = find_optimum_c(data)
+    C = 4
+    m = 1.5
+    centroids, cost, pbmf = cluster_data(data, C, m)
     plot_clusters(data, centroids)
 
 def get_data(file):
@@ -33,8 +35,28 @@ def plot_data(data):
 def find_optimum_c(data):
     pass
 
-def cluster_data(data, C):
-    pass
+def cluster_data(data, C, m=1.5, eps=1e-5):
+    """
+    Executes the FCM algorithm until convergence.
+    C is the number of centroids and m is the fuzzifier.
+    """
+    U = np.random.rand(data.shape[0], C)
+    U = (U.T/U.sum(axis=1)).T
+    while True:
+        um = U ** m
+        c = um.T @ data
+        c = (c.T/um.sum(axis=0)).T
+        oldU = U.copy()
+        U = -2 * data @ c.T
+        U += np.sum(c**2, axis=1)
+        U = (U.T + np.sum(data**2, axis=1)).T
+        U = U ** (1/(m-1))
+        U = 1/U
+        U = (U.T/U.sum(axis=1)).T
+        error = np.sum(np.abs(U-oldU))
+        print('diff:', error)
+        if error < eps:
+            break
 
 def plot_clusters(data, centroids):
     pass
