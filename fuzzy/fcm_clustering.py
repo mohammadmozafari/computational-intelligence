@@ -9,10 +9,10 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import calinski_harabaz_score
 
 def main():
-    data = get_data('sample3.csv')
+    data = get_data('sample1.csv')
     # plot_data(data)
     # try_different_c(data, range(1, 12))
-    C = 2
+    C = 4
     m = 1.5
     centroids, U = cluster_data(data, C, m)
     plot_clusters(data, centroids, m)
