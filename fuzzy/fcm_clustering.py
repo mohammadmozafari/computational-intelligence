@@ -9,13 +9,13 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import calinski_harabaz_score
 
 def main():
-    data = get_data('sample4.csv')
+    data = get_data('sample3.csv')
     # plot_data(data)
-    try_different_c(data, range(1, 12))
-    # C = 4
-    # m = 1.5
-    # centroids = cluster_data(data, C, m)
-    # plot_clusters(data, centroids)
+    # try_different_c(data, range(1, 12))
+    C = 2
+    m = 1.5
+    centroids, U = cluster_data(data, C, m)
+    plot_clusters(data, centroids, m)
 
 def get_data(file):
     """
@@ -116,8 +116,19 @@ def calculate_ch_index(data, centroids, U, m):
         ch = 0
     return ch
 
-def plot_clusters(data, centroids):
-    pass
+def plot_clusters(my_data, centroids, m):
+    """
+    Plots all data and centroids and colors them
+    so we can see the cluster boundaries.
+    """
+    my_labels = np.argmax(calculate_U(my_data, centroids, m), axis=1) + 1
+    all_data = np.random.rand(10000, 2)
+    all_labels = np.argmax(calculate_U(all_data, centroids, m), axis=1) + 1
+    plt.figure(figsize=(8,6))
+    plt.scatter(all_data[:,0], all_data[:,1], s=0.1, c=all_labels)
+    plt.scatter(my_data[:,0], my_data[:,1], s=20, c=my_labels)
+    plt.scatter(centroids[:,0], centroids[:,1], s=40, c='g', marker='s')
+    plt.show()
 
 if __name__ == "__main__":
     main()
