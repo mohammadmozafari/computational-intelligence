@@ -49,6 +49,7 @@ def solve_tsp():
     mu = 1
     lam = 1
     iterations = 100000
+    mutation_rate=0.1
 
     env = tsp_extract_env('tsp_data.txt')
     population = tsp_init_pop(pop_size, env.shape[0])
