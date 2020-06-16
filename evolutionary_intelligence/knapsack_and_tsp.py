@@ -10,20 +10,12 @@ Notes:
         to knapsack and the ones with prefix 'tsp'
         are related to tsp problem
 """
-
-
 import random as rnd
 import numpy as np
 
 def main():
-    # mum = np.array([8, 4, 7, 3, 6, 2, 5, 1, 9, 0])
-    # dad = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
-    # c1, c2 = tsp_crossover(mum, dad)
-    # print(c1)
-    # print(c2)
-
-    solve_tsp()
-    # solve_knapsack()
+    # solve_tsp()
+    solve_knapsack()
 
 def solve_knapsack():
     """
@@ -42,7 +34,11 @@ def solve_knapsack():
         parents = ks_select_parents(population, env, mu, ks_fit)
         children = ks_create_children(parents, pop_size, ks_crossover, ks_mutate, mutation_rate)
         population = children
-        check_population(population, i, ks_fit, env, 1)
+        if (i + 1) % 100 == 0:
+            idx = report(population, i, ks_fit, env, 1)
+
+    print('\nBest Answer:')
+    print(population[idx])
 
 def solve_tsp():
     """
@@ -52,39 +48,47 @@ def solve_tsp():
     pop_size = 1
     mu = 1
     lam = 1
-    mutation_rate = 0.1
-    iterations = 170000
+    iterations = 100000
 
     env = tsp_extract_env('tsp_data.txt')
-    population = tsp_init_pop(pop_size, len(env))
+    population = tsp_init_pop(pop_size, env.shape[0])
     for i in range(iterations):
         parents = population
         children = tsp_create_children(parents, pop_size, tsp_crossover, tsp_mutate, mutation_rate)
         population = tsp_select_children(parents, children, tsp_fit, env, lam)
         if (i + 1) % 1000 == 0:
-            check_population(population, i, tsp_fit, env, 0)
-
-def check_population(population, i, fitness_fn, env, mode):
+            idx = report(population, i, tsp_fit, env, 0)
+    
+    print('\nBest Answer:')
+    print(population[idx])
+    
+def report(population, i, fitness_fn, env, mode):
+    """
+    Reports the results of the current generation
+    """
     lens = []
     for member in population:
         lens.append(fitness_fn(member, env))
     highest_fitness = max(lens)
-    best = population[lens.index(highest_fitness)]
+    idx = lens.index(highest_fitness)
+    best = population[idx]
     
     if mode == 0:
-        print('generation ', i + 1)
-        # print('   best answer:', best)
-        print('   fitness:', highest_fitness)
-        print('   length:', 1 / highest_fitness)
+        print()
+        print('Generation:', i+1)
+        print('   Fitness: %.2e' % highest_fitness)
+        print('   Path Length: %.2f' % (1 / highest_fitness))
+        return idx
     else:
         values = env[1:, 0]
         weights = env[1:, 1]
-        print('generation ', i + 1)
-        print('   best answer:', best)
-        print('   fitness:', highest_fitness)
-        print('   total value:', best @ values)
-        print('   total wight:', best @ weights)
-        print('   capacity:', env[0, 1])
+        print()
+        print('Generation ', i+1)
+        print('   Fitness:', highest_fitness)
+        print('   Total Value:', best @ values)
+        print('   Total Weight:', best @ weights)
+        print('   Capacity:', env[0, 1])
+        return idx
 
 # functions related to knapsack problem
 # =====================================
@@ -134,7 +138,7 @@ def ks_fit(choice, env):
 
 def ks_select_parents(choices, env, mu, fit_fn):
     """
-    Selects parents according to their fitness.
+    Selects parents proportional to their fitness.
     """
     fitness = []
     for choice in choices:
@@ -158,7 +162,8 @@ def ks_crossover(mum, dad):
 
 def ks_mutate(choice):
     """
-    Mutates a choice by randomly change 1 gene from 0 to 1 or vice versa.
+    Mutates a choice by randomly
+    changing 1 gene from 0 to 1 or vice versa.
     """
     length = len(choice)
     rand = rnd.randint(0, length - 1)
@@ -168,7 +173,8 @@ def ks_mutate(choice):
 
 def ks_create_children(parents, pop_size, crossover_fn, mutate_fn, mutation_rate):
     """
-    Each 2 parents create 2 children.
+    Each 2 parents create 2 children using
+    crossover and mutation with given probability.
     """
     children = []
     n = len(parents)
@@ -184,7 +190,7 @@ def ks_create_children(parents, pop_size, crossover_fn, mutate_fn, mutation_rate
         children.append(child2)
     return np.array(children)
 
-# =====================================
+# functions related to tsp problem
 # =====================================
 
 def tsp_extract_env(file):
@@ -207,7 +213,7 @@ def tsp_init_pop(size, num_cities):
     """
     initial_population = []
     for i in range(size):
-        order = list(range(num_cities - 1))
+        order = list(range(num_cities))
         rnd.shuffle(order)
         initial_population.append(order)
     return np.array(initial_population)
@@ -217,14 +223,13 @@ def tsp_fit(route, env):
     Computes the length of given route.
     The fitness equals inverse of length.
     """
-    length = 0.0
-    curr_x, curr_y = env[-1]
-    final_x, final_y = curr_x, curr_y
-    for city in route:
-        next_x, next_y = env[city]
-        length += ((curr_x - next_x) ** 2 + (curr_y - next_y) ** 2) ** 0.5
-        curr_x, curr_y = next_x, next_y
-    length += ((curr_x - final_x) ** 2 + (curr_y - final_y) ** 2) ** 0.5
+    order = np.zeros((route.shape[0]), dtype=int)
+    order[0:-1] = np.arange(route.shape[0] - 1) + 1
+    next_cities = route[order]
+    a = env[route]
+    b = env[next_cities]
+    lens = np.sum((a - b) ** 2, axis=1)
+    length = np.sum(lens ** 0.5)
     return 1 / length
 
 def tsp_select_parents(routes, env, mu, fit_fn):
@@ -263,18 +268,22 @@ def tsp_crossover(mum, dad):
 
 def tsp_mutate(route):
     """
-    Mutates a route by swapping two random genes
+    Randomly selects a substring of the route
+    and inverts it.
     """
     new_route = route.copy()
-    n = len(route)
-    p1 = rnd.randint(1, n - 1)
-    p2 = rnd.randint(0, p1)
-    new_route[p1], new_route[p2] = new_route[p2], new_route[p1]
+    n = route.shape[0]
+    p1 = rnd.randint(0, n - 2)
+    p2 = rnd.randint(p1 + 1, n - 1)
+    segment = route[p1:p2+1].copy()
+    segment = segment[::-1]
+    new_route[p1:p2+1] = segment
     return new_route
 
 def tsp_create_children(parents, pop_size, crossover_fn, mutate_fn, mutation_rate):
     """
-    Each 2 parents create 2 children.
+    Each parent creates one child.
+    The child is created through mutation.
     """
     # children = []
     # n = parents.shape[0]
@@ -290,12 +299,15 @@ def tsp_create_children(parents, pop_size, crossover_fn, mutate_fn, mutation_rat
     #     children.append(child2)
     children = []
     for parent in parents:
-        child = mutate_fn(parent)
-        child = mutate_fn(child)
-        children.append(child)
-    return np.array(children)
+        child1 = mutate_fn(parent)
+        children.append(child1)
+    return children
 
 def tsp_select_children(parents, children, fit_fn, env, lam):
+    """
+    Best routes between parents and children are selected
+    for the next generation.
+    """
     whole = np.concatenate((parents, children))
     fitness = []
     for route in whole:
@@ -303,7 +315,10 @@ def tsp_select_children(parents, children, fit_fn, env, lam):
     fitness = np.array(fitness)
     order = np.argsort(fitness)
     sorted_pop = whole[order]
-    return sorted_pop[-lam:, :]
+    return sorted_pop[-lam:]
+
+# program starting point
+# =====================================
 
 if __name__ == "__main__":
     main()
