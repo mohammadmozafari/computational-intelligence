@@ -1,11 +1,17 @@
+"""
+You must have the following installed:
+    pandas, numpy, matplotlib, s-dbw
+"""
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.metrics import calinski_harabaz_score
 
 def main():
     data = get_data('sample4.csv')
     # plot_data(data)
-    try_different_c(data, range(1, 10))
+    try_different_c(data, range(1, 12))
     # C = 4
     # m = 1.5
     # centroids = cluster_data(data, C, m)
@@ -37,6 +43,7 @@ def cluster_data(data, C, m=1.5, eps=1e-5):
     Executes the FCM algorithm until convergence.
     C is the number of centroids and m is the fuzzifier.
     """
+    np.random.seed(35)
     U = np.random.rand(data.shape[0], C)
     U = (U.T/U.sum(axis=1)).T
     while True:
@@ -70,12 +77,19 @@ def try_different_c(data, c_set, m=1.5):
     Clusters data with different number of clusters
     and returns results to choose the best c.
     """
-    costs = []
+    costs, chs = [], []
     for c in c_set:
         centroids, U = cluster_data(data, c, m)
         cost = calculate_cost(data, centroids, U, m)
+        ch = calculate_ch_index(data, centroids, U, m)
         costs.append(cost)
-    plt.plot(c_set, costs)
+        chs.append(ch)
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
+    fig.suptitle('Cost and CH index plots')
+    ax1.plot(c_set, costs)
+    ax1.set(xlabel='Number of clusters', ylabel='Cost')
+    ax2.plot(c_set, chs)
+    ax2.set(xlabel='Number of clusters', ylabel='Calinski_Harabaz index')
     plt.show()
 
 def calculate_cost(data, centroids, U, m):
@@ -89,6 +103,18 @@ def calculate_cost(data, centroids, U, m):
     distance = (distance.T + np.sum(data**2, axis=1)).T
     cost = np.sum(distance * (U ** m))
     return cost
+
+def calculate_ch_index(data, centroids, U, m):
+    """
+    According to each datum cluster label, this function
+    calculates calinski_harabaz index.
+    """
+    labels = np.argmax(U, axis=1) + 1
+    try:
+        ch = calinski_harabaz_score(data, labels)
+    except:
+        ch = 0
+    return ch
 
 def plot_clusters(data, centroids):
     pass
